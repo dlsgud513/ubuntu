@@ -102,7 +102,7 @@ const RecipeBook = () => {
             </button>
           </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 };
