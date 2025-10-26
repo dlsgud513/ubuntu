@@ -105,10 +105,10 @@ const Dashboard = ({ meals, onAddMeal, onDeleteMeal, loading: isMealLoading }) =
       <div className="bg-white/80 backdrop-blur-sm shadow-md rounded-lg p-6">
         <h2 className="text-xl font-semibold mb-4">하루 권장 칼로리 계산</h2>
         <form onSubmit={handleRecommendationSubmit} className="grid grid-cols-2 sm:grid-cols-4 gap-4 items-end">
-          <div className="flex flex-col">_label htmlFor="gender" className="text-sm font-medium mb-1">성별</label><select id="gender" value={gender} onChange={(e) => setGender(e.target.value)} className="p-2 border rounded-md"><option value="male">남성</option><option value="female">여성</option></select></div>
-          <div className="flex flex-col">_label htmlFor="age" className="text-sm font-medium mb-1">나이</label><input type="number" id="age" placeholder="세" value={age} onChange={(e) => setAge(e.target.value)} className="p-2 border rounded-md" /></div>
-          <div className="flex flex-col">_label htmlFor="height" className="text-sm font-medium mb-1">키</label><input type="number" id="height" placeholder="cm" value={height} onChange={(e) => setHeight(e.target.value)} className="p-2 border rounded-md" /></div>
-          <div className="flex flex-col">_label htmlFor="weight" className="text-sm font-medium mb-1">몸무게</label><input type="number" id="weight" placeholder="kg" value={weight} onChange={(e) => setWeight(e.target.value)} className="p-2 border rounded-md" /></div>
+          <div className="flex flex-col"><label htmlFor="gender" className="text-sm font-medium mb-1">성별</label><select id="gender" value={gender} onChange={(e) => setGender(e.target.value)} className="p-2 border rounded-md"><option value="male">남성</option><option value="female">여성</option></select></div>
+          <div className="flex flex-col"><label htmlFor="age" className="text-sm font-medium mb-1">나이</label><input type="number" id="age" placeholder="세" value={age} onChange={(e) => setAge(e.target.value)} className="p-2 border rounded-md" /></div>
+          <div className="flex flex-col"><label htmlFor="height" className="text-sm font-medium mb-1">키</label><input type="number" id="height" placeholder="cm" value={height} onChange={(e) => setHeight(e.target.value)} className="p-2 border rounded-md" /></div>
+          <div className="flex flex-col"><label htmlFor="weight" className="text-sm font-medium mb-1">몸무게</label><input type="number" id="weight" placeholder="kg" value={weight} onChange={(e) => setWeight(e.target.value)} className="p-2 border rounded-md" /></div>
           <button type="submit" disabled={isCalcLoading} className="col-span-2 sm:col-span-4 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 disabled:bg-gray-400">
             {isCalcLoading ? '계산 중...' : 'AI에게 물어보기'}
           </button>
