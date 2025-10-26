@@ -59,6 +59,7 @@ const Dashboard = ({ meals, onAddMeal, onDeleteMeal, loading: isMealLoading }) =
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
   const [recommendedCalories, setRecommendedCalories] = useState(0);
+  const [recommendedWater, setRecommendedWater] = useState(0);
   const [isCalcLoading, setIsCalcLoading] = useState(false);
 
   useEffect(() => {
@@ -85,17 +86,32 @@ const Dashboard = ({ meals, onAddMeal, onDeleteMeal, loading: isMealLoading }) =
     }
     setIsCalcLoading(true);
     try {
-      const prompt = `${age}세 ${gender === 'male' ? '남성' : '여성'}, 키 ${height}cm, 몸무게 ${weight}kg입니다. 주로 앉아서 생활하는 사무직일 경우, 하루 권장 섭취 칼로리는 얼마인가요? 다른 설명 없이 오직 숫자만으로 알려주세요.`;
-      const res = await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || '백엔드 서버 요청 실패');
-      const text = data.choices[0].message.content;
-      const calories = parseInt(text.trim().replace(/[^0-9]/g, ''), 10);
+      const caloriePrompt = `${age}세 ${gender === 'male' ? '남성' : '여성'}, 키 ${height}cm, 몸무게 ${weight}kg입니다. 주로 앉아서 생활하는 사무직일 경우, 하루 권장 섭취 칼로리는 얼마인가요? 다른 설명 없이 오직 숫자만으로 알려주세요.`;
+      const waterPrompt = `${age}세 ${gender === 'male' ? '남성' : '여성'}, 키 ${height}cm, 몸무게 ${weight}kg입니다. 하루 권장 수분 섭취량은 몇 리터(L)인가요? 다른 설명 없이 오직 숫자만으로 알려주세요.`;
+
+      // Promise.all로 두 요청을 동시에 보냅니다.
+      const [calorieRes, waterRes] = await Promise.all([
+        fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: caloriePrompt }) }),
+        fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: waterPrompt }) })
+      ]);
+
+      const calorieData = await calorieRes.json();
+      if (!calorieRes.ok) throw new Error(calorieData.error || '칼로리 계산 실패');
+      const calorieText = calorieData.choices[0].message.content;
+      const calories = parseInt(calorieText.trim().replace(/[^0-9]/g, ''), 10);
       setRecommendedCalories(isNaN(calories) ? 0 : calories);
+
+      const waterData = await waterRes.json();
+      if (!waterRes.ok) throw new Error(waterData.error || '수분 섭취량 계산 실패');
+      const waterText = waterData.choices[0].message.content;
+      const water = parseFloat(waterText.trim().replace(/[^0-9.]/g, ''));
+      setRecommendedWater(isNaN(water) ? 0 : water);
+
     } catch (error) {
-      console.error('권장 칼로리 계산 중 오류:', error);
+      console.error('계산 중 오류:', error);
       alert(`오류 발생: ${error.message}`);
       setRecommendedCalories(0);
+      setRecommendedWater(0);
     } finally {
       setIsCalcLoading(false);
     }
@@ -140,24 +156,31 @@ const Dashboard = ({ meals, onAddMeal, onDeleteMeal, loading: isMealLoading }) =
           </ul>
         </div>
 
-        {/* 권장 칼로리 계산 섹션 */}
+        {/* 정보 입력 섹션 (칼로리 및 수분 계산용) */}
         <div className="bg-white/80 backdrop-blur-sm shadow-md rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">하루 권장 칼로리 계산</h2>
+          <h2 className="text-xl font-semibold mb-4">내 정보 입력 (AI 분석용)</h2>
           <form onSubmit={handleRecommendationSubmit} className="grid grid-cols-2 sm:grid-cols-4 gap-4 items-end">
             <div className="flex flex-col"><label htmlFor="gender" className="text-sm font-medium mb-1">성별</label><select id="gender" value={gender} onChange={(e) => setGender(e.target.value)} className="p-2 border rounded-md"><option value="male">남성</option><option value="female">여성</option></select></div>
             <div className="flex flex-col"><label htmlFor="age" className="text-sm font-medium mb-1">나이</label><input type="number" id="age" placeholder="세" value={age} onChange={(e) => setAge(e.target.value)} className="p-2 border rounded-md" /></div>
             <div className="flex flex-col"><label htmlFor="height" className="text-sm font-medium mb-1">키</label><input type="number" id="height" placeholder="cm" value={height} onChange={(e) => setHeight(e.target.value)} className="p-2 border rounded-md" /></div>
             <div className="flex flex-col"><label htmlFor="weight" className="text-sm font-medium mb-1">몸무게</label><input type="number" id="weight" placeholder="kg" value={weight} onChange={(e) => setWeight(e.target.value)} className="p-2 border rounded-md" /></div>
             <button type="submit" disabled={isCalcLoading} className="col-span-2 sm:col-span-4 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 disabled:bg-gray-400">
-              {isCalcLoading ? '계산 중...' : 'AI에게 물어보기'}
+              {isCalcLoading ? '계산 중...' : '권장량 계산하기'}
             </button>
           </form>
         </div>
       </div>
 
       {/* Right Column */}
-      <div className="lg:col-span-1">
+      <div className="lg:col-span-1 flex flex-col gap-6">
         <CalorieSummary recommended={recommendedCalories} consumed={totalCalories} />
+        <div className="bg-white/80 backdrop-blur-sm shadow-md rounded-lg p-6 sticky top-24">
+          <h2 className="text-xl font-semibold mb-4 text-center">오늘의 수분 목표</h2>
+          <div className="text-center">
+            <p className="text-4xl font-bold text-cyan-600">{recommendedWater > 0 ? `${recommendedWater} L` : '- L'}</p>
+            <p className="text-sm text-gray-500 mt-2">하루 권장 섭취량</p>
+          </div>
+        </div>
       </div>
     </div>
   );
