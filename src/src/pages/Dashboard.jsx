@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
+const BACKEND_URL = 'http://localhost:3001/api/chat';
 
 const initialMeals = [
   { id: 1, food_name: '사과', quantity: '1개', calories: 52, created_at: new Date().toISOString() },
@@ -21,46 +20,27 @@ const Dashboard = () => {
   }, [meals]);
 
   const getCaloriesForFood = async (food) => {
-    if (!API_KEY || API_KEY === 'YOUR_GEMINI_API_KEY') {
-      console.warn('Gemini API 키가 .env 파일에 설정되지 않았습니다. 임시 딜레이 후 0을 반환합니다.');
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      return 0;
-    }
-
     setLoading(true);
     try {
       const prompt = `음식 '${food}'의 예상 칼로리(Kcal)를 다른 설명 없이 오직 숫자만으로 알려줘. 응답은 반드시 숫자만 포함해야 해.`;
       
-      console.log('Gemini API 요청 프롬프트:', prompt);
-
-      const res = await fetch(API_URL, {
+      const res = await fetch(BACKEND_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+        body: JSON.stringify({ prompt }),
       });
 
       const data = await res.json();
-      console.log('Gemini API 전체 응답:', data);
-
       if (!res.ok) {
-        console.error('API 요청 실패:', data);
-        throw new Error('API 요청 실패');
+        throw new Error(data.error || '백엔드 서버 요청 실패');
       }
 
-      if (!data.candidates || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0].text) {
-        console.error('API 응답 형식이 예상과 다릅니다.', data);
-        return 0;
-      }
-
-      const text = data.candidates[0].content.parts[0].text;
-      console.log('API에서 추출된 텍스트:', text);
-
+      const text = data.choices[0].message.content;
       const calories = parseInt(text.trim().replace(/[^0-9]/g, ''), 10);
-      console.log('파싱된 칼로리:', calories);
-
       return isNaN(calories) ? 0 : calories;
     } catch (e) {
       console.error('칼로리 계산 중 오류 발생:', e);
+      alert(`오류 발생: ${e.message}`);
       return 0;
     } finally {
       setLoading(false);

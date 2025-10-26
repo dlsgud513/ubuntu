@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
+const BACKEND_URL = 'http://localhost:3001/api/chat';
 
 const RecipeSearch = () => {
   const [prompt, setPrompt] = useState('');
@@ -15,10 +14,6 @@ const RecipeSearch = () => {
       alert('요청 내용을 입력해주세요.');
       return;
     }
-    if (!API_KEY || API_KEY === 'YOUR_GEMINI_API_KEY') {
-      alert('.env 파일에 유효한 Gemini API 키를 입력해주세요.');
-      return;
-    }
 
     setLoading(true);
     setError(null);
@@ -27,22 +22,20 @@ const RecipeSearch = () => {
     try {
       const fullPrompt = `당신은 전문 영양사입니다. 다음 요청에 따라 레시피를 추천하고, 결과는 한국어로 제공해 주세요. 각 레시피는 제목, 주요 재료, 간단 조리법을 포함해야 합니다. 결과를 깔끔한 마크다운 형식으로 작성해주세요.\n\n[사용자 요청]:\n${prompt}`;
 
-      const res = await fetch(API_URL, {
+      const res = await fetch(BACKEND_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: fullPrompt }] }],
-        }),
+        body: JSON.stringify({ prompt: fullPrompt }),
       });
 
+      const data = await res.json();
       if (!res.ok) {
-        throw new Error(`API 요청 실패: ${res.statusText}`);
+        throw new Error(data.error || '백엔드 서버 요청 실패');
       }
 
-      const data = await res.json();
-      const text = data.candidates[0].content.parts[0].text;
+      const text = data.choices[0].message.content;
       setResponse(text);
 
     } catch (e) {
